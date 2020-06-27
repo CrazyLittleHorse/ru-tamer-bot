@@ -474,4 +474,4 @@ async def top(ctx, count='5'):
     await ctx.send(embed=emb)
 
 
-bot.run(open('token.txt').readline())
+bot.run(os.environ.get('BOT_TOKEN', open('token.txt').readline()))
