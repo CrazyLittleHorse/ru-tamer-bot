@@ -127,3 +127,4 @@ dmypy.json
 .pyre/
 
 ru-tamer-bot/core/del.py
+!/config/
