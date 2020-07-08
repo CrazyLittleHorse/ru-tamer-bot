@@ -53,7 +53,7 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    if message.channel == int(os.environ.get('WORK_CHANNEL')):
+    if message.channel.id == int(os.environ.get('WORK_CHANNEL')):
         await bot.process_commands(message)
 
 
