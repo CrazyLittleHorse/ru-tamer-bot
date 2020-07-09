@@ -1,6 +1,6 @@
 # RU Tamer Bot
 
-Небольшой бот для комьюнити сервера мистиков, по игре Black Desert Online. 
+Небольшой бот для [discord сервера мистиков](https://discord.gg/rWFkPGJ), по игре Black Desert Online. 
 
 
 ## Основные особенности

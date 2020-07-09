@@ -33,7 +33,7 @@ async def on_ready():
 
 @bot.event
 async def on_command_error(ctx, error):
-    print(f'В собщении от {ctx.author}: "{ctx.message.content}" Ошибка: {error}')
+    print(f'В сообщении от {ctx.author}: "{ctx.message.content}" Ошибка: {error}')
 
     if isinstance(error, commands.CommandNotFound):
         await ctx.send(f'ОШИБКА: команда {ctx.message.content.split()[0]} не найдена.')
