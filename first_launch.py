@@ -68,7 +68,11 @@ def database_settings():
 
 if __name__ == '__main__':
     while True:
-        print('Меню настройщика:\n1. Основные настройки.\n2. Настройки рангового модуля.')
+        print('Меню настройщика:\n'
+              '1. Основные настройки.\n'
+              '2. Настройки рангового модуля.\n'
+              '3. Настройка подключения к MySql.\n'
+              '0. Выход.')
         menu = input('Выберете пункт меню: ')
         if menu == '1':
             base_settings()
@@ -76,5 +80,7 @@ if __name__ == '__main__':
             ranking_settings()
         elif menu == '3':
             database_settings()
+        elif menu == '0':
+            exit()
         else:
             continue
