@@ -94,14 +94,12 @@ async def extensions_menu(ctx, ext_name):
             for r in ex_reactions:
                 await msg.add_reaction(r)
 
-            def check(reaction, user):
+            def check(_reaction: discord.Reaction, _user: discord.User):
                 """
                 Проверка на добавление эмоции.
-                :type reaction discord.Reaction
-                :type user: discord.User
                 """
-                return (reaction.message.id == msg.id) and (user.id == ctx.author.id) and (
-                            str(reaction) in ex_reactions)
+                return (_reaction.message.id == msg.id) and (_user.id == ctx.author.id) and (
+                            str(_reaction) in ex_reactions)
 
             try:
                 reaction, user = await bot.wait_for('reaction_add', check=check, timeout=10)
@@ -132,4 +130,4 @@ if __name__ == '__main__':
         if file.endswith('.py') and not file.startswith('_'):
             bot.load_extension(f'Extensions.{file[:-3]}')
 
-    bot.run(os.environ.get("BOT_TOKEN", config_file['token']))
+    bot.run(os.environ.get("BOT_TOKEN", config_file.get('token')))
