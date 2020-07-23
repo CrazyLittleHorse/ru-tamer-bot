@@ -2,171 +2,57 @@ import asyncio
 import datetime
 import math
 import os
-import pymysql.cursors
 import json
 import discord
 from discord.ext import commands
 from pathlib import Path
+from Extensions.utils.database import Database
 
 # Список всех рангов в формате (необходимый рейтинг), ссылка на иконку, название ранга, множитель бонуса
 RATING = (
-    (
-        (range(0, 1040), 'https://i.imgur.com/SuYYsXY.png', 'Без ранга', 60),
-        (range(1040, 1100), 'https://i.imgur.com/XbVzYHR.png', 'Бронза 1', 55),
-        (range(1100, 1160), 'https://i.imgur.com/azG6I8e.png', 'Бронза 2', 55),
-        (range(1160, 1220), 'https://i.imgur.com/TkUqBsD.png', 'Бронза 3', 50),
-        (range(1220, 1280), 'https://i.imgur.com/WSOnsHc.png', 'Бронза 4', 50),
-        (range(1280, 1340), 'https://i.imgur.com/bIVnTrp.png', 'Бронза 5', 45),
-        (range(1340, 1400), 'https://i.imgur.com/YWT7SbH.png', 'Бронза 6', 45)
-    ),
-    (
-        (range(1400, 1440), 'https://i.imgur.com/yx2M1Tm.png', 'Серебро 1', 40),
-        (range(1440, 1480), 'https://i.imgur.com/qOvFcoL.png', 'Серебро 2', 40),
-        (range(1480, 1520), 'https://i.imgur.com/7wy6xxV.png', 'Серебро 3', 40),
-        (range(1520, 1560), 'https://i.imgur.com/vSNTJWw.png', 'Серебро 4', 35),
-        (range(1560, 1600), 'https://i.imgur.com/R8ZKpS5.png', 'Серебро 5', 35),
-        (range(1600, 1650), 'https://i.imgur.com/gYVyfxs.png', 'Серебро 6', 35)
-    ),
-    (
-        (range(1650, 1690), 'https://i.imgur.com/lt25mUK.png', 'Золото 1', 30),
-        (range(1690, 1730), 'https://i.imgur.com/JYbfWt6.png', 'Золото 2', 30),
-        (range(1730, 1770), 'https://i.imgur.com/qax6ldG.png', 'Золото 3', 30),
-        (range(1770, 1810), 'https://i.imgur.com/0FJ7Xyw.png', 'Золото 4', 25),
-        (range(1810, 1850), 'https://i.imgur.com/JAdKmVk.png', 'Золото 5', 25),
-        (range(1850, 1900), 'https://i.imgur.com/B9DfCPb.png', 'Золото 6', 25)
-    ),
-    (
-        (range(1900, 1940), 'https://i.imgur.com/xU2rLSK.png', 'Платина 1', 20),
-        (range(1940, 1980), 'https://i.imgur.com/zbnkEvM.png', 'Платина 2', 20),
-        (range(1980, 2020), 'https://i.imgur.com/N8OY1fr.png', 'Платина 3', 20),
-        (range(2020, 2060), 'https://i.imgur.com/Tv3ATgf.png', 'Платина 4', 15),
-        (range(2060, 2100), 'https://i.imgur.com/0Q4HS8r.png', 'Платина 5', 15),
-        (range(2100, 2150), 'https://i.imgur.com/LnqpvKr.png', 'Платина 6', 15)
-    ),
-    (
-        (range(2150, 2190), 'https://i.imgur.com/u3tDWU6.png', 'Бриллиант 1', 10),
-        (range(2190, 2230), 'https://i.imgur.com/Ks7r0Lj.png', 'Бриллиант 2', 10),
-        (range(2230, 2270), 'https://i.imgur.com/9f5l9Dk.png', 'Бриллиант 3', 10),
-        (range(2270, 2310), 'https://i.imgur.com/5hUQ7bN.png', 'Бриллиант 4', 5),
-        (range(2310, 2350), 'https://i.imgur.com/luuN1JH.png', 'Бриллиант 5', 5),
-        (range(2350, 2400), 'https://i.imgur.com/0VCD9Mn.png', 'Бриллиант 6', 5)
-    ),
-    (
-        (range(2400, 5000), 'https://i.imgur.com/vG8Vhac.png', 'Оникс', 3),
-    )
+    (range(0, 1040), 'https://i.imgur.com/SuYYsXY.png', 'Без ранга', 60),
+
+    (range(1040, 1100), 'https://i.imgur.com/XbVzYHR.png', 'Бронза 1', 55),
+    (range(1100, 1160), 'https://i.imgur.com/azG6I8e.png', 'Бронза 2', 55),
+    (range(1160, 1220), 'https://i.imgur.com/TkUqBsD.png', 'Бронза 3', 50),
+    (range(1220, 1280), 'https://i.imgur.com/WSOnsHc.png', 'Бронза 4', 50),
+    (range(1280, 1340), 'https://i.imgur.com/bIVnTrp.png', 'Бронза 5', 45),
+    (range(1340, 1400), 'https://i.imgur.com/YWT7SbH.png', 'Бронза 6', 45),
+
+    (range(1400, 1440), 'https://i.imgur.com/yx2M1Tm.png', 'Серебро 1', 40),
+    (range(1440, 1480), 'https://i.imgur.com/qOvFcoL.png', 'Серебро 2', 40),
+    (range(1480, 1520), 'https://i.imgur.com/7wy6xxV.png', 'Серебро 3', 40),
+    (range(1520, 1560), 'https://i.imgur.com/vSNTJWw.png', 'Серебро 4', 35),
+    (range(1560, 1600), 'https://i.imgur.com/R8ZKpS5.png', 'Серебро 5', 35),
+    (range(1600, 1650), 'https://i.imgur.com/gYVyfxs.png', 'Серебро 6', 35),
+
+    (range(1650, 1690), 'https://i.imgur.com/lt25mUK.png', 'Золото 1', 30),
+    (range(1690, 1730), 'https://i.imgur.com/JYbfWt6.png', 'Золото 2', 30),
+    (range(1730, 1770), 'https://i.imgur.com/qax6ldG.png', 'Золото 3', 30),
+    (range(1770, 1810), 'https://i.imgur.com/0FJ7Xyw.png', 'Золото 4', 25),
+    (range(1810, 1850), 'https://i.imgur.com/JAdKmVk.png', 'Золото 5', 25),
+    (range(1850, 1900), 'https://i.imgur.com/B9DfCPb.png', 'Золото 6', 25),
+
+    (range(1900, 1940), 'https://i.imgur.com/xU2rLSK.png', 'Платина 1', 20),
+    (range(1940, 1980), 'https://i.imgur.com/zbnkEvM.png', 'Платина 2', 20),
+    (range(1980, 2020), 'https://i.imgur.com/N8OY1fr.png', 'Платина 3', 20),
+    (range(2020, 2060), 'https://i.imgur.com/Tv3ATgf.png', 'Платина 4', 15),
+    (range(2060, 2100), 'https://i.imgur.com/0Q4HS8r.png', 'Платина 5', 15),
+    (range(2100, 2150), 'https://i.imgur.com/LnqpvKr.png', 'Платина 6', 15),
+
+    (range(2150, 2190), 'https://i.imgur.com/u3tDWU6.png', 'Бриллиант 1', 10),
+    (range(2190, 2230), 'https://i.imgur.com/Ks7r0Lj.png', 'Бриллиант 2', 10),
+    (range(2230, 2270), 'https://i.imgur.com/9f5l9Dk.png', 'Бриллиант 3', 10),
+    (range(2270, 2310), 'https://i.imgur.com/5hUQ7bN.png', 'Бриллиант 4', 5),
+    (range(2310, 2350), 'https://i.imgur.com/luuN1JH.png', 'Бриллиант 5', 5),
+    (range(2350, 2400), 'https://i.imgur.com/0VCD9Mn.png', 'Бриллиант 6', 5),
+
+    (range(2400, 5000), 'https://i.imgur.com/vG8Vhac.png', 'Оникс', 3),
+
 )
 
 #   Получение рабочей директории МОДУЛЯ
 cwd = str(Path(__file__).parents[0])
-
-
-class Database(object):
-    """Класс для подключения и работы с базой данных MySql"""
-
-    def __init__(self):
-        with open(os.path.join(cwd, 'config', 'ranking', 'database.json'), 'r') as f:
-            database_config = json.loads(f.read())
-        self.__conn = pymysql.connect(host=os.environ.get('DB_HOST', database_config['DB_HOST']),
-                                      user=os.environ.get('DB_USER', database_config['DB_USER']),
-                                      password=os.environ.get('DB_PASSWORD', database_config['DB_PASSWORD']),
-                                      db=os.environ.get('DB_NAME', database_config['DB_NAME']))
-        self.__cur = self.__conn.cursor()
-
-    def __enter__(self):
-        return self
-
-    def __del__(self):
-        if self.__conn.open:
-            self.__conn.close()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__cur.close()
-        if isinstance(exc_val, Exception):
-            print(exc_val)
-            self.__conn.rollback()
-        else:
-            self.__conn.commit()
-        self.__conn.close()
-
-    def new_rating(self, user_id, user_rating, user_wins, user_loses):
-        """Изменяет рейтинг пользователя"""
-        __query_update = (f'UPDATE {os.environ.get("DB_NAME")}.players_rating pr '
-                          f'SET pr.current = 0, pr.date_end = CURRENT_TIMESTAMP() '
-                          f'WHERE pr.user_id = {user_id} AND pr.current = 1;')
-        __query_insert = (f'INSERT INTO {os.environ.get("DB_NAME")}.players_rating '
-                          f'(version, user_id, user_rating, user_wins, user_loses, date_start) '
-                          f'VALUES ('
-                          f'IFNULL((SELECT MAX(version) + 1 FROM players_rating pr WHERE pr.user_id = {user_id}), 1), '
-                          f'{user_id}, '
-                          f'{user_rating}, '
-                          f'{user_wins}, '
-                          f'{user_loses}, '
-                          f'CURRENT_TIMESTAMP());')
-        __query_arr = [__query_update,
-                       __query_insert]
-        for __query in __query_arr:
-            self.__cur.execute(__query)
-
-    def remove_user(self, user_id):
-        """Удаляет все записи о пользователе"""
-
-        self.__cur.execute(f'''DELETE FROM {os.environ.get("DB_NAME")}.players_rating WHERE user_id={user_id}''')
-
-    def get_top(self, limit=5):
-        """Возвращает топ по user_rating"""
-
-        self.__cur.execute(f'SELECT '
-                           f'players_rating.user_id, '
-                           f'players_rating.user_rating '
-                           f'FROM players_rating '
-                           f'WHERE players_rating.current = 1 '
-                           f'ORDER BY players_rating.user_rating DESC LIMIT {limit if limit in range(0, 11) else 5}')
-
-        return tuple(self.__cur.fetchall())
-
-    def get_info(self, user_id):
-        """Возвращает информацию о пользователе:
-        user_id, user_rating, user_wins, user_loses
-        либо None"""
-
-        self.__cur.execute(f'SELECT '
-                           f'   pr.user_id, '
-                           f'   pr.user_rating, '
-                           f'   (SELECT '
-                           f'       SUM(pr.user_wins) '
-                           f'       FROM {os.environ.get("DB_NAME")}.players_rating pr '
-                           f'       WHERE pr.user_id = {user_id}), '
-                           f'   (SELECT '
-                           f'       SUM(pr.user_loses) '
-                           f'       FROM {os.environ.get("DB_NAME")}.players_rating pr '
-                           f'       WHERE pr.user_id = {user_id}) '
-                           f'FROM {os.environ.get("DB_NAME")}.players_rating pr '
-                           f'WHERE pr.user_id = {user_id} '
-                           f'AND pr.current = 1;')
-
-        try:
-            user_info = (tuple(self.__cur.fetchone()))
-        except TypeError:
-            user_info = None
-
-        return user_info
-
-    def get_champion(self, user_id):
-        """Проверяет, является ли пользователь чемпионом"""
-
-        self.__cur.execute(f'SELECT pr.user_id '
-                           f'FROM {os.environ.get("DB_NAME")}.players_rating pr '
-                           f'WHERE pr.current=1 '
-                           f'ORDER BY pr.user_rating DESC LIMIT 1')
-
-        return True if user_id in self.__cur.fetchone() else False
-
-    def check_user(self, user_id):
-        """Проверка на наличие пользователя в базе"""
-
-        self.__cur.execute(f'''SELECT 1 FROM {os.environ.get("DB_NAME")}.players_rating pr WHERE pr.user_id={user_id} LIMIT 1''')
-
-        return True if self.__cur.fetchone() else False
 
 
 class Elo:
@@ -176,7 +62,7 @@ class Elo:
     Sa - счет игрока 1
     Sb - счет игрока 2"""
 
-    def __init__(self, Ra, Rb, Sa, Sb):
+    def __init__(self, Ra: int, Rb, Sa, Sb):
         self.__Ra = Ra
         self.__Rb = Rb
         self.__Sa = Sa
@@ -210,24 +96,22 @@ class Elo:
         G = math.log((abs(self.__Sa - self.__Sb) + 1) * (2.2 / ((ELOW - ELOL) * .001 + 2.2)))
         return G if G < 3 else 3
 
-    def __K(self):
+    def __K(self) -> int:
         """Коэффициент в зависимости от рейтинга."""
         for rating_list in RATING:
-            for pod_rating_list in rating_list:
-                if self.__Ra in pod_rating_list[0]:
-                    return pod_rating_list[3]
+            if self.__Ra in rating_list[0]:
+                return rating_list[3]
 
     def new_elo_rating(self):
         """Новый рейтинг"""
         return round(self.__Ra + self.__K() * self.__G() * (self.__W() - self.__We()))
 
 
-def rating_img(user_rating):
+def rating_img(user_rating: int) -> tuple:
     """Parsing списка рейтинга"""
     for rating_list in RATING:
-        for pod_rating_list in rating_list:
-            if user_rating in pod_rating_list[0]:
-                return pod_rating_list[1], pod_rating_list[2]
+        if user_rating in rating_list[0]:
+            return rating_list[1], rating_list[2]
 
 
 class RankingSystem(commands.Cog, name='ранговая система'):
@@ -294,8 +178,8 @@ class RankingSystem(commands.Cog, name='ранговая система'):
                 kill_death = f'{kill_death:.2f}'
                 emb.add_field(name='K/D:', value=f'{kill_death}', inline=False)
         else:
-            emb.set_thumbnail(url=RATING[0][0][1])
-            emb.add_field(name='Ранг:', value=RATING[0][0][2])
+            emb.set_thumbnail(url=RATING[0][1])
+            emb.add_field(name='Ранг:', value=RATING[0][2])
         await ctx.send(embed=emb)
 
     @commands.command(name='roles', aliases=['роли', 'role', 'роль'])
@@ -319,7 +203,8 @@ class RankingSystem(commands.Cog, name='ранговая система'):
 
     @commands.command(name='duel', aliases=['дуэль'])
     async def duel(self, ctx, member: discord.Member, *counts: str):
-        """Внесение данных о дуэли в базу.\nФормат: "!duel @Соперник победы поражения"\nПомните, что необходимо именно упомянуть соперника."""   # help doc
+        """Внесение данных о дуэли в базу.\nФормат: "!duel @Соперник победы поражения"\n
+        Помните, что необходимо именно упомянуть соперника."""  # help doc
         if member.id == ctx.author.id or member.bot:
             await ctx.send('Ха-ха, нет, даже не думай, что я на это поведусь.')
             return
@@ -368,8 +253,8 @@ class RankingSystem(commands.Cog, name='ранговая система'):
             for e in emote:
                 await message.add_reaction(e)
 
-            def check(reaction, user):
-                return (reaction.message.id == message.id) and (user.id == member.id) and (str(reaction) in emote)
+            def check(reaction_cls, user_cls):
+                return (reaction_cls.message.id == message.id) and (user_cls.id == member.id) and (str(reaction_cls) in emote)
 
             # =========== Ожидание эмоции.
             try:
